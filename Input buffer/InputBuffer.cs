@@ -8,7 +8,7 @@ using System.Collections.Generic;
 /// methods.
 /// (more on AutoLoad: https://docs.godotengine.org/en/stable/tutorials/scripting/singletons_autoload.html)
 /// </summary>
-public class InputBuffer : Node
+public partial class InputBuffer : Node
 {
     /// <summary>
     /// How many milliseconds ahead of time the player can make an input and have it still be recognized.
@@ -17,20 +17,18 @@ public class InputBuffer : Node
     private static readonly ulong BUFFER_WINDOW = 150;
 
     /// <summary> Tells when each keyboard key was last pressed. </summary>
-    private static Dictionary<uint, ulong> _keyboardTimestamps;
+    private static Dictionary<Key, ulong> _keyboardTimestamps;
     /// <summary> Tells when each joypad (controller) button was last pressed. </summary>
-    private static Dictionary<int, ulong> _joypadTimestamps;
+    private static Dictionary<JoyButton, ulong> _joypadTimestamps;
 
     /// <summary>
     /// Called when the node enters the scene tree for the first time.
     /// </summary>
     public override void _Ready()
     {
-        PauseMode = PauseModeEnum.Process;
-
         // Initialize all dictionary entries.
-        _keyboardTimestamps = new Dictionary<uint, ulong>();
-        _joypadTimestamps = new Dictionary<int, ulong>();
+        _keyboardTimestamps = new Dictionary<Key, ulong>();
+        _joypadTimestamps = new Dictionary<JoyButton, ulong>();
     }
 
     /// <summary>
@@ -45,7 +43,7 @@ public class InputBuffer : Node
             InputEventKey eventKey = @event as InputEventKey;
             if (!eventKey.Pressed || eventKey.IsEcho()) return;
 
-            uint scancode = eventKey.Scancode;
+            Key scancode = eventKey.Keycode;
 
             if (_keyboardTimestamps.ContainsKey(scancode))
             {
@@ -63,7 +61,7 @@ public class InputBuffer : Node
             InputEventJoypadButton eventJoypadButton = @event as InputEventJoypadButton;
             if (!eventJoypadButton.Pressed || eventJoypadButton.IsEcho()) return;
 
-            int buttonIndex = eventJoypadButton.ButtonIndex;
+            JoyButton buttonIndex = eventJoypadButton.ButtonIndex;
 
             if (_joypadTimestamps.ContainsKey(buttonIndex))
             {
@@ -90,12 +88,12 @@ public class InputBuffer : Node
         Get the inputs associated with the action. If any one of them was pressed in the last BUFFER_WINDOW 
         milliseconds, the action is buffered.
         */
-        foreach (InputEvent @event in InputMap.GetActionList(action))
+        foreach (InputEvent @event in InputMap.ActionGetEvents(action))
         {
             if (@event is InputEventKey)
             {
                 InputEventKey eventKey = @event as InputEventKey;
-                uint scancode = eventKey.Scancode;
+                Key scancode = eventKey.Keycode;
                 if (_keyboardTimestamps.ContainsKey(scancode))
                 {
                     if (Time.GetTicksMsec() - _keyboardTimestamps[scancode] <= BUFFER_WINDOW)
@@ -110,7 +108,7 @@ public class InputBuffer : Node
             else if (@event is InputEventJoypadButton)
             {
                 InputEventJoypadButton eventJoypadButton = @event as InputEventJoypadButton;
-                int buttonIndex = eventJoypadButton.ButtonIndex;
+                JoyButton buttonIndex = eventJoypadButton.ButtonIndex;
                 if (_joypadTimestamps.ContainsKey(buttonIndex))
                 {
                     if (Time.GetTicksMsec() - _joypadTimestamps[buttonIndex] <= BUFFER_WINDOW)
@@ -137,12 +135,12 @@ public class InputBuffer : Node
     /// <param name="action"> The action whose input to invalidate. </param>
     public static void InvalidateAction(string action)
     {
-        foreach (InputEvent @event in InputMap.GetActionList(action))
+        foreach (InputEvent @event in InputMap.ActionGetEvents(action))
         {
             if (@event is InputEventKey)
             {
                 InputEventKey eventKey = @event as InputEventKey;
-                uint scancode = eventKey.Scancode;
+                Key scancode = eventKey.Keycode;
                 if (_keyboardTimestamps.ContainsKey(scancode))
                 {
                     _keyboardTimestamps[scancode] = 0;
@@ -151,7 +149,7 @@ public class InputBuffer : Node
             else if (@event is InputEventJoypadButton)
             {
                 InputEventJoypadButton eventJoypadButton = @event as InputEventJoypadButton;
-                int buttonIndex = eventJoypadButton.ButtonIndex;
+                JoyButton buttonIndex = eventJoypadButton.ButtonIndex;
                 if (_joypadTimestamps.ContainsKey(buttonIndex))
                 {
                     _joypadTimestamps[buttonIndex] = 0;
